@@ -64,19 +64,17 @@ EOF
 
 parse_stat() {
   local ins=0 del=0
-  read ins del <<< "$(grep 'files changed' |
-  sed -e 's/[^0-9]/ /g' |
-  awk -v NO_ZEROES=$NO_ZEROES "
+  read ins del _ <<< "$(awk "
     BEGIN {
       ins = 0;
       del = 0;
       }
     {
-      ins += \$2;
-      del += \$3;
+      ins += \$1;
+      del += \$2;
     }
     END {
-      printf(ins, del);
+      print(ins, del);
     }"
   )"
   if (( ins + del == 0 )) && [[ ! -z $NO_ZEROES ]]; then
@@ -127,9 +125,13 @@ for d in */ .; do
   cd "$d"
   d=${d%\/}
   if [[ -d .hg ]]; then
-    parse_stat  "Hg" "$d" < <(hg  log  "${HG_ARGS[@]}" --stat)
+    parse_stat  "Hg" "$d" < <(
+      hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
+      sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
   elif [[ -d .git ]]; then
-    parse_stat "Git" "$d" < <(git log "${GIT_ARGS[@]}" --shortstat --oneline)
+    parse_stat "Git" "$d" < <(
+      git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
+      sed -n 's/[^0-9]/ /g ; /[0-9]/p')
   else
     :
   fi
