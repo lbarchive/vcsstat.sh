@@ -19,16 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-VCSSTAT_VERSION=0.1
+VCSSTAT_VERSION=0.2
 
 FMT_DIR="%-30s"
 FMT_OUT="\033[1;32m+ %5d\033[0m / \033[1;31m- %5d\033[0m\n"
-NO_ZEROES=
+
+CC_LEGEND=(
+  "░" "▒" "▓" "█"
+  "\e[33;1m░\e[0m" "\e[33;1m▒\e[0m" "\e[33;1m▓\e[0m" "\e[33;1m█\e[0m"
+  "\e[32;1m░\e[0m" "\e[32;1m▒\e[0m" "\e[32;1m▓\e[0m" "\e[32;1m█\e[0m"
+)
+
 
 usage() {
   cat <<EOF
 
-$(basename "$0") [-C] [-Z] [''|AUTHOR_NAME [''|HG_DATESPEC [''|GIT_SINCE [''|GIT_UNTIL]]]]
+$(basename "$0") [options] [''|AUTHOR_NAME [''|HG_DATESPEC [''|GIT_SINCE [''|GIT_UNTIL]]]]
 
 Version $VCSSTAT_VERSION
 
@@ -37,7 +43,9 @@ that you are not specifying it.
 
 Options:
 
+  -c:       Commit calendar mode
   -C:       Do not color output
+  -U:       Do not use Unicode (only for -c and implies -C)
   -Z:       Filter out repo with no changes
 
 HG_DATESPEC Examples
@@ -62,27 +70,54 @@ date specification, perhaps?
 EOF
 }
 
+
 parse_stat() {
   local ins=0 del=0
   read ins del _ <<< "$(awk "
-    BEGIN {
-      ins = 0;
-      del = 0;
-      }
-    {
-      ins += \$1;
-      del += \$2;
-    }
-    END {
-      print(ins, del);
-    }"
+    BEGIN {ins = 0; del = 0;}
+    {ins += \$1; del += \$2;}
+    END {print(ins, del);}"
   )"
-  if (( ins + del == 0 )) && [[ ! -z $NO_ZEROES ]]; then
-    return
-  fi
+  ((ins + del == 0)) && [[ $NO_ZEROES == yes ]] && return
   printf "[%3s] $FMT_DIR $FMT_OUT" "$1" "$2" $ins $del
-  : $(( total_ins += ins )) $(( total_del += del ))
+  ((total_ins += ins, total_del += del))
 }
+
+
+count_ccal() {
+  while read d _; do
+    key=$(date -d "$d" +%Y%V%u)
+    ((ccal[key] += 1))
+  done
+}
+
+
+cc_print_year() {
+  # generate week numbers of start day of month
+  month_week=([1]=$1)
+  for ((m = 2; m <= 12; m++)); do
+    read week abbr <<< "$(date -d "$y-$m-1" +'%V %b')"
+    month_week[${week#0}]=$abbr
+  done
+  for ((w = 1; w <= 53; w++)); do
+    if [[ ! -z ${month_week[w]} ]]; then
+      echo -n "${month_week[w]}"
+      ((w += ${#month_week[w]} - 1))
+    else
+      echo -n ' '
+    fi
+  done
+  echo
+
+  for ((d = 1; d <= 7; d++)); do
+    for ((w = 1; w <= 53; w++)); do
+      printf -v k '%d%02d%d' $y $w $d
+      echo -ne "${CC_LEGEND[$((${ccal[k]:-0} * CC_SCALE / cc_max))]}"
+    done
+    echo
+  done
+}
+
 
 while (( $# )); do
   case "$1" in
@@ -90,20 +125,32 @@ while (( $# )); do
       usage
       exit
       ;;
+    -c)
+      CCAL=yes
+      ccal=()
+      ;;
     -C)
       FMT_OUT=${FMT_OUT//"\033["?";"??"m"/}
       FMT_OUT=${FMT_OUT//"\033["?"m"/}
-      shift
+      [[ $NO_UNICODE != yes ]] && CC_LEGEND=("░" "▒" "▓" "█")
+      ;;
+    -U)
+      NO_UNICODE=yes
+      CC_LEGEND=('.' '-' '+' '*' '#' '@')
       ;;
     -Z)
       NO_ZEROES=yes
-      shift
+      ;;
+    -?*)
+      echo "Unknown option: $1" >&2
       ;;
     *)
       break
       ;;
   esac
+  shift
 done
+
 
 GIT_ARGS=()
 HG_ARGS=()
@@ -117,27 +164,43 @@ fi
 [[ ! -z "$3" ]] && GIT_ARGS=("${GIT_ARGS[@]}" "--since" "$3")
 [[ ! -z "$4" ]] && GIT_ARGS=("${GIT_ARGS[@]}" "--until" "$4")
 
-total_ins=0
-total_del=0
+CC_SCALE=$((${#CC_LEGEND[@]} - 1))
+
 
 for d in */ .; do
   [[ ! -d "$d" ]] && continue
   cd "$d"
   d=${d%\/}
   if [[ -d .hg ]]; then
-    parse_stat  "Hg" "$d" < <(
-      hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
-      sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
+    [[ $CCAL == yes ]] \
+    && count_ccal < <(hg log "${HG_ARGS[@]}" --template '{date|rfc3339date}\n') \
+    || parse_stat  "Hg" "$d" < <(
+         hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
+         sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
   elif [[ -d .git ]]; then
-    parse_stat "Git" "$d" < <(
-      git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
-      sed -n 's/[^0-9]/ /g ; /[0-9]/p')
-  else
-    :
+    [[ $CCAL == yes ]] \
+    && count_ccal < <(git log "${GIT_ARGS[@]}" --pretty=format:%ai) \
+    || parse_stat "Git" "$d" < <(
+         git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
+         sed -n 's/[^0-9]/ /g ; /[0-9]/p')
   fi
   cd ..
 done
 
-if (( total_ins + total_del > 0 )) || [[ -z $NO_ZEROES ]]; then
+
+if [[ $CCAL == yes ]]; then
+  # find begin and end years
+  keys=("${!ccal[@]}")
+  cc_begin=${keys[0]:0:4}
+  cc_end=${keys[-1]:0:4}
+  unset keys[@]
+  # find max number of commits
+  for count in "${ccal[@]}"; do
+    ((count > cc_max)) && cc_max=$count
+  done
+  for ((y=cc_begin; y<=cc_end; y++)); do
+    cc_print_year $y
+  done
+elif ((total_ins + total_del > 0)) || [[ $NO_ZEROES != yes ]]; then
   printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del
 fi
