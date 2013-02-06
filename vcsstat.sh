@@ -202,5 +202,7 @@ if [[ $CCAL == yes ]]; then
     cc_print_year $y
   done
 elif ((total_ins + total_del > 0)) || [[ $NO_ZEROES != yes ]]; then
+  printf -- '-%.s' {1..54}
+  echo
   printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del
 fi
