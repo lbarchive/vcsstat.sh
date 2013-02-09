@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-VCSSTAT_VERSION=0.2
+VCSSTAT_VERSION=0.3
 
 FMT_DIR="%-30s"
-FMT_OUT="\033[1;32m+ %5d\033[0m / \033[1;31m- %5d\033[0m\n"
+FMT_OUT="\e[1;32m+ %5d\e[0m / \e[1;31m- %5d\e[0m / \e[1;33mC %5d\e[0m\n"
 
 CC_LEGEND=(
   "░" "▒" "▓" "█"
@@ -73,14 +73,14 @@ EOF
 
 parse_stat() {
   local ins=0 del=0
-  read ins del _ <<< "$(awk "
-    BEGIN {ins = 0; del = 0;}
-    {ins += \$1; del += \$2;}
-    END {print(ins, del);}"
+  read ins del c _ <<< "$(awk "
+    BEGIN {ins = 0; del = 0; c = 0}
+    {ins += \$1; del += \$2; c++}
+    END {print ins, del, c}"
   )"
   ((ins + del == 0)) && [[ $NO_ZEROES == yes ]] && return
-  printf "[%3s] $FMT_DIR $FMT_OUT" "$1" "$2" $ins $del
-  ((total_ins += ins, total_del += del))
+  printf "[%3s] $FMT_DIR $FMT_OUT" "$1" "$2" $ins $del $c
+  ((total_ins += ins, total_del += del, total_c += c))
 }
 
 
@@ -130,8 +130,8 @@ while (( $# )); do
       ccal=()
       ;;
     -C)
-      FMT_OUT=${FMT_OUT//"\033["?";"??"m"/}
-      FMT_OUT=${FMT_OUT//"\033["?"m"/}
+      FMT_OUT=${FMT_OUT//"\e["?";"??"m"/}
+      FMT_OUT=${FMT_OUT//"\e["?"m"/}
       [[ $NO_UNICODE != yes ]] && CC_LEGEND=("░" "▒" "▓" "█")
       ;;
     -U)
@@ -182,7 +182,19 @@ for d in */ .; do
     && count_ccal < <(git log "${GIT_ARGS[@]}" --pretty=format:%ai) \
     || parse_stat "Git" "$d" < <(
          git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
-         sed -n 's/[^0-9]/ /g ; /[0-9]/p')
+         awk '
+         BEGIN {ins = 0; del = 0; two=0}
+         {
+            if ($0 != "") {
+              ins += $1; del += $2
+            } else {
+              two++
+              if (two < 2) next
+              print ins, del
+              ins = 0; del = 0 ; two = 0
+            }
+         }
+         END {if (two == 1) print ins, del}')
   fi
   cd ..
 done
@@ -201,8 +213,7 @@ if [[ $CCAL == yes ]]; then
   for ((y=cc_begin; y<=cc_end; y++)); do
     cc_print_year $y
   done
-elif ((total_ins + total_del > 0)) || [[ $NO_ZEROES != yes ]]; then
-  printf -- '-%.s' {1..54}
-  echo
-  printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del
+elif ((total_c > 0)) || [[ $NO_ZEROES != yes ]]; then
+  printf -- '-%.s' {1..64} ; echo
+  printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del $total_c
 fi

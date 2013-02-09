@@ -1,7 +1,7 @@
 vcsstat.sh
 ==========
 
-A Bash script to list additions and deletions of repositories.
+A Bash script to list numbers of additions, deletions, and commits of repositories.
 
 Example
 -------
@@ -9,11 +9,17 @@ Example
 Listing the repos with diff statistics within time range:
 
     $ vcsstat.sh -Z -C '' -7 '1 week ago'
-    [ Hg] b.sh                           +   420 / -     0
-    [ Hg] g                              +    33 / -     0
-    [Git] jquery-textfill                +   458 / -     0
-    [ Hg] yjl.im                         +   151 / -     0
-    TOTAL                                +  1062 / -     0
+    [ Hg] b.py                           +   965 / -   438 / C    18
+    [Git] dotfiles                       +   160 / -    10 / C     3
+    [ Hg] g                              +     7 / -     3 / C     2
+    [Git] jquery-textfill                +    23 / -    14 / C     4
+    [Git] newyear-resolution             +  1430 / -    83 / C     7
+    [Git] pipes.sh                       +    33 / -    15 / C     4
+    [ Hg] urtimer                        +    41 / -    10 / C     2
+    [ Hg] vcsstat.sh                     +   131 / -    42 / C     4
+    [ Hg] yjl.im                         +     4 / -     4 / C     1
+    ----------------------------------------------------------------
+    TOTAL                                +  2794 / -   619 / C    45
 
 Showing commits made in 2012 in Commit Calendar mode:
 
