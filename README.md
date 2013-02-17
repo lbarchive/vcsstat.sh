@@ -3,6 +3,8 @@ vcsstat.sh
 
 A Bash script to list numbers of additions, deletions, and commits of repositories.
 
+[TOC]
+
 Usage
 -----
 
@@ -38,19 +40,27 @@ See..., uhm I have no idea where to look at. `man gitrevisions` for date specifi
 Example
 -------
 
-Listing the repos with diff statistics within time range:
+### Listing
+
+    vcsstat.sh -Z $USER '>2011' 2011
 
 ![output](https://lh4.googleusercontent.com/-2xZlGFL7Rls/UQ6UJvC3gqI/AAAAAAAAEaY/RCDjyt5tySY/s800/vcsstat.sh.png)
 
-Showing commits made in 2012 in Commit Calendar mode:
+### Calendar mode
 
-1[calendar with color](https://lh6.googleusercontent.com/-pmy5cph0Zw8/UQ6UIjEduyI/AAAAAAAAEaQ/hKDTOZWAuj8/s800/vcsstat.sh%2520-%2520commit%2520calendar.png)
+    vcsstat.sh -c $USER '>2011' 2011
 
-Without color:
+![calendar with color](https://lh6.googleusercontent.com/-pmy5cph0Zw8/UQ6UIjEduyI/AAAAAAAAEaQ/hKDTOZWAuj8/s800/vcsstat.sh%2520-%2520commit%2520calendar.png)
+
+### Calendar mode without color
+
+    vcsstat.sh -c -C $USER '>2011' 2011
 
 ![calendar without color](https://lh6.googleusercontent.com/-F5Mz3mkaJMk/UQ6UHb827EI/AAAAAAAAEaI/d10VfQSft-I/s800/vcsstat.sh%2520-%2520commit%2520calendar%2520-%2520no%2520color.png)
 
-Without Unicode:
+### Calendar mode without Unicode
+
+    vcsstat.sh -c -U $USER '>2011' 2011
 
 ![calendar without Unicode](https://lh6.googleusercontent.com/-jlG8EZDWXok/UQ6UGUB2hnI/AAAAAAAAEaA/xAyiYmPZFQA/s800/vcsstat.sh%2520-%2520commit%2520calendar%2520-%2520no%2520Unicode.png)
 
