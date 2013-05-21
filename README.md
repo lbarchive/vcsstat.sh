@@ -65,6 +65,14 @@ Example
 
 ![calendar without Unicode](https://lh6.googleusercontent.com/-jlG8EZDWXok/UQ6UGUB2hnI/AAAAAAAAEaA/xAyiYmPZFQA/s800/vcsstat.sh%2520-%2520commit%2520calendar%2520-%2520no%2520Unicode.png)
 
+### Fun with [gitfiti][]
+
+Graffiti in Git:
+
+![graffiti](https://lh5.googleusercontent.com/-LBxEscGbTKM/UZuNioCbXSI/AAAAAAAAE0I/6vumCkRuOv4/s800/gitfiti%2520and%2520vcsstat.sh%25202013-05-21--23%253A00%253A22.png)
+
+[gitfiti]: https://github.com/gelstudios/gitfiti
+
 License
 -------
 
