@@ -19,6 +19,7 @@ that you are not specifying it.
     -C:       Do not color output
     -U:       Do not use Unicode (only for -c and implies -C)
     -Z:       Filter out repo with no changes
+    -m:       Week starts with Mondays
 
 ### `HG_DATESPEC` Examples
 

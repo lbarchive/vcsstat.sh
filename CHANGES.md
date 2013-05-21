@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+## Development
+
+ * add -m option for week start on Mondays
+
 ## Version 0.3 (2013-02-09T11:11:30Z)
 
  * add numbers of commits

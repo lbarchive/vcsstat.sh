@@ -47,6 +47,7 @@ Options:
   -C:       Do not color output
   -U:       Do not use Unicode (only for -c and implies -C)
   -Z:       Filter out repo with no changes
+  -m:       Week starts with Mondays
 
 HG_DATESPEC Examples
 ====================
@@ -86,7 +87,11 @@ parse_stat() {
 
 count_ccal() {
   while read d _; do
-    key=$(date -d "$d" +%Y%V%u)
+    if [[ $MONDAY_FIRST == yes ]]; then
+      key=$(date -d "$d" +%Y%W%u)
+    else
+      key=$(date -d "$d" +%Y%U%w)
+    fi
     ((ccal[key] += 1))
   done
 }
@@ -96,10 +101,14 @@ cc_print_year() {
   # generate week numbers of start day of month
   month_week=([1]=$1)
   for ((m = 2; m <= 12; m++)); do
-    read week abbr <<< "$(date -d "$y-$m-1" +'%V %b')"
+    if [[ $MONDAY_FIRST == yes ]]; then
+      read week abbr <<< "$(date -d "$y-$m-1" +'%W %b')"
+    else
+      read week abbr <<< "$(date -d "$y-$m-1" +'%U %b')"
+    fi
     month_week[${week#0}]=$abbr
   done
-  for ((w = 1; w <= 53; w++)); do
+  for ((w = 0; w <= 53; w++)); do
     if [[ ! -z ${month_week[w]} ]]; then
       echo -n "${month_week[w]}"
       ((w += ${#month_week[w]} - 1))
@@ -110,8 +119,12 @@ cc_print_year() {
   echo
 
   for ((d = 1; d <= 7; d++)); do
-    for ((w = 1; w <= 53; w++)); do
-      printf -v k '%d%02d%d' $y $w $d
+    for ((w = 0; w <= 53; w++)); do
+      if [[ $MONDAY_FIRST == yes ]]; then
+        printf -v k '%d%02d%d' $y $w $d
+      else
+        printf -v k '%d%02d%d' $y $w $((d - 1))
+      fi
       echo -ne "${CC_LEGEND[$((${ccal[k]:-0} * CC_SCALE / cc_max))]}"
     done
     echo
@@ -140,6 +153,9 @@ while (( $# )); do
       ;;
     -Z)
       NO_ZEROES=yes
+      ;;
+    -m)
+      MONDAY_FIRST=yes
       ;;
     -?*)
       echo "Unknown option: $1" >&2
