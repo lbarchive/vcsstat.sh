@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+## Version 0.4.0 (2013-05-21T15:02:00Z)
+
  * add -m option for week start on Mondays
 
 ## Version 0.3 (2013-02-09T11:11:30Z)
