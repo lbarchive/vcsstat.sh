@@ -44,10 +44,12 @@ that you are not specifying it.
 Options:
 
   -c:       Commit calendar mode
+  -x:       Output additions/deletions/commits in CSV format
   -C:       Do not color output
   -U:       Do not use Unicode (only for -c and implies -C)
   -Z:       Filter out repo with no changes
   -m:       Week starts with Mondays
+  -h:       This thing you are reading
 
 HG_DATESPEC Examples
 ====================
@@ -80,7 +82,7 @@ parse_stat() {
     END {print ins, del, c}"
   )"
   ((ins + del == 0)) && [[ $NO_ZEROES == yes ]] && return
-  printf "[%3s] $FMT_DIR $FMT_OUT" "$1" "$2" $ins $del $c
+  printf "$FMT_LINE" "$1" "$2" $ins $del $c
   ((total_ins += ins, total_del += del, total_c += c))
 }
 
@@ -132,40 +134,37 @@ cc_print_year() {
 }
 
 
-while (( $# )); do
-  case "$1" in
-    -h|--help)
+while getopts hcxCUZm opt; do
+  case "$opt" in
+    h)
       usage
       exit
       ;;
-    -c)
-      CCAL=yes
+    c)
+      MODE=calendar
       ccal=()
       ;;
-    -C)
+    x)
+      MODE=csv
+      ;;
+    C)
       FMT_OUT=${FMT_OUT//"\e["?";"??"m"/}
       FMT_OUT=${FMT_OUT//"\e["?"m"/}
       [[ $NO_UNICODE != yes ]] && CC_LEGEND=("░" "▒" "▓" "█")
       ;;
-    -U)
+    U)
       NO_UNICODE=yes
       CC_LEGEND=('.' '-' '+' '*' '#' '@')
       ;;
-    -Z)
+    Z)
       NO_ZEROES=yes
       ;;
-    -m)
+    m)
       MONDAY_FIRST=yes
       ;;
-    -?*)
-      echo "Unknown option: $1" >&2
-      ;;
-    *)
-      break
-      ;;
   esac
-  shift
 done
+shift $((OPTIND - 1))
 
 
 GIT_ARGS=()
@@ -183,18 +182,26 @@ fi
 CC_SCALE=$((${#CC_LEGEND[@]} - 1))
 
 
+if [[ $MODE == csv ]]; then
+  echo 'Type,Repository,Additions,Deletions,Commits'
+  FMT_LINE="%s,%s,%d,%d,%d\n"
+else
+  FMT_LINE="[%3s] $FMT_DIR $FMT_OUT"
+fi
+
+
 for d in */ .; do
   [[ ! -d "$d" ]] && continue
   cd "$d"
   d=${d%\/}
   if [[ -d .hg ]]; then
-    [[ $CCAL == yes ]] \
+    [[ $MODE == calendar ]] \
     && count_ccal < <(hg log "${HG_ARGS[@]}" --template '{date|rfc3339date}\n') \
     || parse_stat  "Hg" "$d" < <(
          hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
          sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
   elif [[ -d .git ]]; then
-    [[ $CCAL == yes ]] \
+    [[ $MODE == calendar ]] \
     && count_ccal < <(git log "${GIT_ARGS[@]}" --pretty=format:%ai) \
     || parse_stat "Git" "$d" < <(
          git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
@@ -216,7 +223,7 @@ for d in */ .; do
 done
 
 
-if [[ $CCAL == yes ]]; then
+if [[ $MODE == calendar ]]; then
   # find begin and end years
   keys=("${!ccal[@]}")
   cc_begin=${keys[0]:0:4}
@@ -230,6 +237,10 @@ if [[ $CCAL == yes ]]; then
     cc_print_year $y
   done
 elif ((total_c > 0)) || [[ $NO_ZEROES != yes ]]; then
-  printf -- '-%.s' {1..64} ; echo
-  printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del $total_c
+  if [[ $MODE == csv ]]; then
+    printf "TOTAL,,%d,%d,%d\n" $total_ins $total_del $total_c
+  else
+    printf -- '-%.s' {1..64} ; echo
+    printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del $total_c
+  fi
 fi

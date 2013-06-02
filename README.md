@@ -16,6 +16,7 @@ that you are not specifying it.
 ### Options
 
     -c:       Commit calendar mode
+    -x:       Output additions/deletions/commits in CSV format
     -C:       Do not color output
     -U:       Do not use Unicode (only for -c and implies -C)
     -Z:       Filter out repo with no changes
@@ -38,8 +39,8 @@ See `man hg ` for `DATE FORMATS` section.
 
 See..., uhm I have no idea where to look at. `man gitrevisions` for date specification, perhaps?
 
-Example
--------
+Examples
+--------
 
 ### Listing
 
@@ -64,6 +65,17 @@ Example
     vcsstat.sh -c -U $USER '>2011' 2011
 
 ![calendar without Unicode](https://lh6.googleusercontent.com/-jlG8EZDWXok/UQ6UGUB2hnI/AAAAAAAAEaA/xAyiYmPZFQA/s800/vcsstat.sh%2520-%2520commit%2520calendar%2520-%2520no%2520Unicode.png)
+
+### CSV output
+
+    vcsstat.sh -x $USER '>2011' 2011
+
+    Type,Repository,Additions,Deletions,Commits
+    Git,KLTT,361,108,12
+    Git,agileshare,1988,19,9
+    Hg,yjl,4342,21356,153
+    Hg,yjlwiki,2885,2503,16
+    TOTAL,,63650,49760,959
 
 ### Fun with [gitfiti][]
 

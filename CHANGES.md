@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+ * add -x option for CSV output
+
 ## Version 0.4.0 (2013-05-21T15:02:00Z)
 
  * add -m option for week start on Mondays
