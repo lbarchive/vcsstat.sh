@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+## Version 0.5.0 (2013-06-02T12:21:03Z)
+
  * add -x option for CSV output
 
 ## Version 0.4.0 (2013-05-21T15:02:00Z)
