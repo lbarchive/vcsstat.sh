@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+## Version 0.6.0 (2013-06-09T22:42:55Z)
+
 * add -p option for punchcard mode
 
 ## Version 0.5.0 (2013-06-02T12:21:03Z)
