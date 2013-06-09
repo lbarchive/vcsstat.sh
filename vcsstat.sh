@@ -44,6 +44,7 @@ that you are not specifying it.
 Options:
 
   -c:       Commit calendar mode
+  -p:       Punchcard mode
   -x:       Output additions/deletions/commits in CSV format
   -C:       Do not color output
   -U:       Do not use Unicode (only for -c and implies -C)
@@ -99,6 +100,14 @@ count_ccal() {
 }
 
 
+count_pcal() {
+  while read d _; do
+    printf -v key '%(%u%H)T' $d
+    ((pcal[key] += 1))
+  done
+}
+
+
 cc_print_year() {
   # generate week numbers of start day of month
   month_week=([1]=$1)
@@ -134,7 +143,7 @@ cc_print_year() {
 }
 
 
-while getopts hcxCUZm opt; do
+while getopts hcpxCUZm opt; do
   case "$opt" in
     h)
       usage
@@ -143,6 +152,10 @@ while getopts hcxCUZm opt; do
     c)
       MODE=calendar
       ccal=()
+      ;;
+    p)
+      MODE=punchcard
+      pcal=()
       ;;
     x)
       MODE=csv
@@ -182,12 +195,17 @@ fi
 CC_SCALE=$((${#CC_LEGEND[@]} - 1))
 
 
-if [[ $MODE == csv ]]; then
-  echo 'Type,Repository,Additions,Deletions,Commits'
-  FMT_LINE="%s,%s,%d,%d,%d\n"
-else
-  FMT_LINE="[%3s] $FMT_DIR $FMT_OUT"
-fi
+case "$MODE" in
+  calendar|punchcard)
+    ;;
+  csv)
+    echo 'Type,Repository,Additions,Deletions,Commits'
+    FMT_LINE="%s,%s,%d,%d,%d\n"
+    ;;
+  *)
+    FMT_LINE="[%3s] $FMT_DIR $FMT_OUT"
+    ;;
+esac
 
 
 for d in */ .; do
@@ -195,52 +213,94 @@ for d in */ .; do
   cd "$d"
   d=${d%\/}
   if [[ -d .hg ]]; then
-    [[ $MODE == calendar ]] \
-    && count_ccal < <(hg log "${HG_ARGS[@]}" --template '{date|rfc3339date}\n') \
-    || parse_stat  "Hg" "$d" < <(
-         hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
-         sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
+    case "$MODE" in
+      calendar)
+        count_ccal < <(hg log "${HG_ARGS[@]}" --template '{date|rfc3339date}\n')
+        ;;
+      punchcard)
+        count_pcal < <(hg log "${HG_ARGS[@]}" --template '{date|hgdate}\n')
+        ;;
+      *)
+        parse_stat  "Hg" "$d" < <(
+          hg  log  "${HG_ARGS[@]}" --template '{diffstat}\n' |
+          sed -n 's/[^0-9]/ /g ; s/^[0-9]\+// ; /[0-9]/p')
+        ;;
+    esac
   elif [[ -d .git ]]; then
-    [[ $MODE == calendar ]] \
-    && count_ccal < <(git log "${GIT_ARGS[@]}" --pretty=format:%ai) \
-    || parse_stat "Git" "$d" < <(
-         git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
-         awk '
-         BEGIN {ins = 0; del = 0; two=0}
-         {
-            if ($0 != "") {
-              ins += $1; del += $2
-            } else {
-              two++
-              if (two < 2) next
-              print ins, del
-              ins = 0; del = 0 ; two = 0
-            }
-         }
-         END {if (two == 1) print ins, del}')
+    case "$MODE" in
+      calendar)
+        count_ccal < <(git log "${GIT_ARGS[@]}" --pretty=format:%ai)
+        ;;
+      punchcard)
+        count_pcal < <(git log "${GIT_ARGS[@]}" --pretty=format:%at)
+        ;;
+      *)  # csv and default
+        parse_stat "Git" "$d" < <(
+          git log "${GIT_ARGS[@]}" --numstat --pretty=format: |
+          awk '
+          BEGIN {ins = 0; del = 0; two=0}
+          {
+             if ($0 != "") {
+               ins += $1; del += $2
+             } else {
+               two++
+               if (two < 2) next
+               print ins, del
+               ins = 0; del = 0 ; two = 0
+             }
+          }
+          END {if (two == 1) print ins, del}')
+        ;;
+    esac
   fi
   cd ..
 done
 
 
-if [[ $MODE == calendar ]]; then
-  # find begin and end years
-  keys=("${!ccal[@]}")
-  cc_begin=${keys[0]:0:4}
-  cc_end=${keys[-1]:0:4}
-  unset keys[@]
-  # find max number of commits
-  for count in "${ccal[@]}"; do
-    ((count > cc_max)) && cc_max=$count
-  done
-  for ((y=cc_begin; y<=cc_end; y++)); do
-    cc_print_year $y
-  done
-elif ((total_c > 0)) || [[ $NO_ZEROES != yes ]]; then
-  if [[ $MODE == csv ]]; then
-    printf "TOTAL,,%d,%d,%d\n" $total_ins $total_del $total_c
-  else
-    printf -- '-%.s' {1..64} ; echo
-    printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del $total_c
-  fi
-fi
+case "$MODE" in
+  calendar)
+    # find begin and end years
+    keys=("${!ccal[@]}")
+    cc_begin=${keys[0]:0:4}
+    cc_end=${keys[-1]:0:4}
+    unset keys[@]
+    # find max number of commits
+    for count in "${ccal[@]}"; do
+      ((count > cc_max)) && cc_max=$count
+    done
+    for ((y=cc_begin; y<=cc_end; y++)); do
+      cc_print_year $y
+    done
+    ;;
+  punchcard)
+    # find max number of commits
+    for count in "${pcal[@]}"; do
+      ((count > cc_max)) && cc_max=$count
+    done
+
+    if [[ $MONDAY_FIRST == yes ]]; then
+      days_order='1 2 3 4 5 6 7'
+    else
+      days_order='7 1 2 3 4 5 6'
+    fi
+    days_names=('' 'Mon' 'Tue' 'Wed' 'Thu' 'Fri' 'Sat' 'Sun')
+    for d in $days_order; do
+      echo -n "${days_names[d]}"
+      for h in {00..23}; do
+        echo -ne "  ${CC_LEGEND[$((${pcal[$d$h]:-0} * CC_SCALE / cc_max))]}"
+      done
+      echo
+    done
+    echo -n '   ' ; printf '%3s' {0..23} ; echo
+    ;;
+  *)  # csv and default
+    if ((total_c > 0)) || [[ $NO_ZEROES != yes ]]; then
+      if [[ $MODE == csv ]]; then
+        printf "TOTAL,,%d,%d,%d\n" $total_ins $total_del $total_c
+      else
+        printf -- '-%.s' {1..64} ; echo
+        printf "TOTAL $FMT_DIR $FMT_OUT" '' $total_ins $total_del $total_c
+      fi
+    fi
+    ;;
+esac

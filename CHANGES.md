@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+* add -p option for punchcard mode
+
 ## Version 0.5.0 (2013-06-02T12:21:03Z)
 
  * add -x option for CSV output

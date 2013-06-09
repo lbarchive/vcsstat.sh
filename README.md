@@ -16,6 +16,7 @@ that you are not specifying it.
 ### Options
 
     -c:       Commit calendar mode
+    -p:       Punchcard mode
     -x:       Output additions/deletions/commits in CSV format
     -C:       Do not color output
     -U:       Do not use Unicode (only for -c and implies -C)
