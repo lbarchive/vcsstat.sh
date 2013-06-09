@@ -67,6 +67,10 @@ Examples
 
 ![calendar without Unicode](https://lh6.googleusercontent.com/-jlG8EZDWXok/UQ6UGUB2hnI/AAAAAAAAEaA/xAyiYmPZFQA/s800/vcsstat.sh%2520-%2520commit%2520calendar%2520-%2520no%2520Unicode.png)
 
+### Punchcard mode
+
+[![punchcard](https://lh3.googleusercontent.com/-bHKFAtztM3Q/UbUGnPNBvII/AAAAAAAAE5s/hvpM2mxapW8/s640/vcsstat.sh%2520punchcard%2520mode%25202013-06-10--06%253A46%253A55.png)(https://picasaweb.google.com/lh/photo/A99rbb4Jq29ML5zE7timOgAR95DKuQ-7LD03-K9DA7Q?feat=directlink)
+
 ### CSV output
 
     vcsstat.sh -x $USER '>2011' 2011
