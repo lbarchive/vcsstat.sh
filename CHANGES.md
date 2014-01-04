@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+* add Makefile
+
 ## Version 0.6.0 (2013-06-09T22:42:55Z)
 
 * add -p option for punchcard mode

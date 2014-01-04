@@ -5,6 +5,23 @@ A Bash script to list numbers of additions, deletions, and commits of repositori
 
 [TOC]
 
+Installation
+------------
+
+By default, to install to `/usr/local`, run:
+
+    $ make install
+
+Or to `/usr`:
+    
+    $ make install PREFIX=/usr
+
+Or to your home:
+
+    $ make install PREFIX=$HOME
+
+To uninstall, use `uninstall` target with `PREFIX` if supplied during installation.
+
 Usage
 -----
 
