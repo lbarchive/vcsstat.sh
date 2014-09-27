@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (C) 2011, 2013 by Yu-Jie Lin
+# Copyright (C) 2011, 2013, 2014 by Yu-Jie Lin
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -210,7 +210,7 @@ esac
 
 for d in */ .; do
   [[ ! -d "$d" ]] && continue
-  cd "$d"
+  cd -- "$d"
   d=${d%\/}
   if [[ -d .hg ]]; then
     case "$MODE" in

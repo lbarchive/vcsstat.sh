@@ -111,4 +111,4 @@ License
 -------
 
     vcsstat.sh is licensed under the MIT License
-    Copyright (C) 2011, 2013 by Yu-Jie Lin
+    Copyright (C) 2011, 2013, 2014 by Yu-Jie Lin
