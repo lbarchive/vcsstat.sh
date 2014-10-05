@@ -3,6 +3,8 @@ CHANGES
 
 ## Development
 
+## Version 0.6.1 (2014-10-05T11:01:41Z)
+
 * add Makefile
 * fix repository directory starting with a dash `-`
 
